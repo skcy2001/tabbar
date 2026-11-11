@@ -1,0 +1,4 @@
+#native-error { position: fixed; inset: auto 4px 4px; z-index: 9999; padding: 10px; color: #fff; background: #733944; border: 1px solid #e6a0ad; border-radius: 8px; font: 12px system-ui; overflow-wrap: anywhere; cursor: pointer; }
+html[data-fullscreen='true'] .pane-shell .pane-outer-resize-handle { display: none; }
+.toolbar-controls { padding-right: 60px; }
+.toolbar.has-downloads .toolbar-controls { padding-right: 90px; }

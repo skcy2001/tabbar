@@ -89,7 +89,7 @@ const MEDIA_INFO_SCRIPT = `
     title: metadata?.title || active?.getAttribute('title') || active?.getAttribute('aria-label') || '',
     artist: metadata?.artist || '',
     album: metadata?.album || '',
-    artworkUrl: image,
+    artworkUrl: image || active?.poster || null,
     hasMedia: media.length > 0,
     mediaPaused: active ? active.paused : null,
   };

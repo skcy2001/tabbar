@@ -353,107 +353,53 @@
   font-size: 12px;
 }
 
-/* ---- Floating player window ---- */
+/* ---- Windows-style thumbnail preview ---- */
 
+html[data-role='player'] {
+  color-scheme: light dark;
+  --preview-bg: #262626;
+  --preview-text: #f5f5f5;
+  --preview-hover: rgba(255, 255, 255, .09);
+  --preview-line: rgba(255, 255, 255, .09);
+}
+html[data-role='player'] body { background: var(--preview-bg); color: var(--preview-text); }
+@media (prefers-color-scheme: light) {
+  html[data-role='player'] {
+    --preview-bg: #f3f3f3;
+    --preview-text: #1b1b1b;
+    --preview-hover: rgba(0, 0, 0, .06);
+    --preview-line: rgba(0, 0, 0, .1);
+  }
+}
 .player-shell {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 100vw;
-  height: auto;
-  min-height: 0;
-  padding: 12px;
-  box-sizing: border-box;
-  background: var(--bg-toolbar);
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.player-title-frame {
   width: 100%;
-  min-height: 22px;
-  overflow: hidden;
-  white-space: nowrap;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 22px;
-}
-
-.player-title-text {
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: top;
-}
-
-.player-title-frame.scrolling .player-title-text {
-  max-width: none;
-  padding-right: 46px;
-  overflow: visible;
-  text-overflow: clip;
-  animation: player-title-scroll 9s linear infinite;
-}
-
-.player-title-frame.scrolling:hover .player-title-text {
-  animation-play-state: paused;
-}
-
-.player-artwork {
-  width: 100%;
-  height: auto;
+  padding: 6px;
+  border: 1px solid var(--preview-line);
   border-radius: 8px;
-  object-fit: contain;
-  background: var(--bg-dark);
-  flex: 0 0 auto;
-  max-height: 236px;
+  overflow: hidden;
+  background: var(--preview-bg);
+  color: var(--preview-text);
+  font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
 }
-
-.player-artwork.fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #000;
-  background: var(--accent);
-  font-size: 42px;
-  font-weight: 700;
-  aspect-ratio: 1;
-}
-
-.player-controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.player-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--bg-hover);
-  color: var(--text-primary);
-  flex: 0 0 auto;
-  cursor: pointer;
-}
-
-.player-btn:hover {
-  background: var(--accent);
-  color: #000;
-}
-
-@keyframes player-title-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-100%);
-  }
-}
+.player-header { display: flex; align-items: center; gap: 8px; height: 32px; padding-left: 4px; }
+.player-favicon, .player-window-icon { flex: 0 0 16px; width: 16px; height: 16px; object-fit: contain; }
+.player-window-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; font-weight: 400; }
+.player-thumbnail { position: relative; display: block; flex: 0 0 auto; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 4px; background: #151515; box-shadow: inset 0 0 0 1px var(--preview-line); }
+.player-thumbnail-content { position: absolute; inset: 0; width: 100%; height: 100%; animation: player-thumbnail-in 160ms ease-out; }
+.player-thumbnail img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.player-thumbnail-placeholder { display: grid; place-items: center; width: 100%; height: 100%; color: #929292; }
+.player-thumbnail-placeholder .player-window-icon { width: 42px; height: 42px; }
+.player-controls { display: flex; align-items: center; justify-content: center; gap: 12px; height: 40px; flex: 0 0 40px; }
+.player-btn { display: grid; place-items: center; width: 36px; height: 28px; border-radius: 4px; color: inherit; }
+.player-btn:hover:not(:disabled) { background: var(--preview-hover); }
+.player-btn:disabled { opacity: .35; cursor: default; }
+.player-control-error { padding: 0 6px 6px; font-size: 12px; line-height: 1.4; color: var(--preview-text); }
+.player-btn:active { opacity: .65; }
+.player-thumbnail:focus-visible, .player-btn:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+@keyframes player-thumbnail-in { from { opacity: .3; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .player-thumbnail-content { animation: none; } }
 
 /* ---- Edge peek window (hidden-mode tug) ---- */
 

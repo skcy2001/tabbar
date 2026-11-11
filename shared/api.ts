@@ -35,8 +35,8 @@ export interface SidebarApi {
     getCollapsed: () => Promise<boolean>
     getSide: () => Promise<Side>
     dispatch: (action: TabAction) => void
-    showContextMenu: (tabId: number) => void
-    showPinnedContextMenu: (siteId: string) => void
+    showContextMenu: (tabId: number, clientX?: number, clientY?: number) => void
+    showPinnedContextMenu: (siteId: string, clientX?: number, clientY?: number) => void
     launchPinnedSite: (siteId: string) => void
     setPaneWidth: (width: number) => void
     capturePreview: (tabId: number) => Promise<string | null>
@@ -44,6 +44,8 @@ export interface SidebarApi {
     togglePlayPause: (tabId: number) => Promise<void>
     nextTrack: (tabId: number) => Promise<boolean>
     toggleMute: (tabId: number) => Promise<boolean>
+    /** Native hosts may expose fullscreen without a keyboard shortcut. */
+    toggleFullscreen?: () => void
     reorderPinned: (fromSiteId: string, toSiteId: string, before?: boolean) => void
     /** Hands the active tab's URL to the OS browser (http/https only). */
     openActiveInDefaultBrowser: () => void

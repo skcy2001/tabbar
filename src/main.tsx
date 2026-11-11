@@ -15,6 +15,8 @@ const role: ShellRole =
     ? 'downloads'
     : 'pane'
 
+document.documentElement.dataset.role = role
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App role={role} />

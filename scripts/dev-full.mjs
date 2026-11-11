@@ -37,7 +37,7 @@ try {
   // it has no other way to tell itself apart from `npm start`.
   electron = spawn(electronPath, ['.'], {
     stdio: 'inherit',
-    env: { ...process.env, SIDEBAR_DEV_SERVER_URL: VITE_URL },
+    env: { ...process.env, TABBAR_DEV_SERVER_URL: VITE_URL },
   })
 
   console.log(`[dev] Electron started with pid ${electron.pid}`)

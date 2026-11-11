@@ -1,4 +1,4 @@
-name: Build macOS
+name: Build Tabbar macOS (Electron)
 
 # Builds the unsigned macOS app. Runs on demand, and on any v* tag.
 # macOS is the only platform where electron-builder can produce a .dmg, so this
@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sidebar-macos
+          name: tabbar-macos
           path: |
             release/*.dmg
             release/*.zip

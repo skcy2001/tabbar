@@ -1,18 +1,18 @@
 /**
- * Turns a launch request — a command-line argument, or a `sidebar://` link
+ * Turns a launch request — a command-line argument, or a `tabbar://` link
  * handed over by Windows — into a web URL to open.
  *
  * Kept free of any `electron` import so it can be exercised outside the
  * Electron runtime.
  */
 
-export const LAUNCH_PROTOCOL = 'sidebar'
+export const LAUNCH_PROTOCOLS = ['tabbar', 'sidebar'] as const
 
 /**
  * Normalises one raw launch argument.
  *
- * Accepts `https://example.com`, `sidebar://example.com`, and
- * `sidebar://https://example.com`. Returns null for anything that is not http(s)
+ * Accepts `https://example.com`, `tabbar://example.com`, and
+ * `tabbar://https://example.com`. Returns null for anything that is not http(s)
  * once normalised: these arguments arrive from outside the app, so schemes like
  * `file:` or `javascript:` must never reach a tab.
  *
@@ -24,12 +24,15 @@ export function normalizeLaunchUrl(raw?: string | null): string | null {
   let value = raw.trim()
   if (!value) return null
 
-  const prefix = `${LAUNCH_PROTOCOL}://`
-  if (value.toLowerCase().startsWith(prefix)) {
+  const prefix = LAUNCH_PROTOCOLS.map(scheme => `${scheme}://`).find(prefix => value.toLowerCase().startsWith(prefix))
+  if (prefix) {
     value = value.slice(prefix.length)
     if (!value) return null
-    // `sidebar://example.com` means https; `sidebar://http://x` keeps its scheme.
-    if (!/^https?:\/\//i.test(value)) value = `https://${value}`
+    // `tabbar://example.com` means https; `tabbar://http://x` keeps its scheme.
+    if (!/^https?:\/\//i.test(value)) {
+      if (value.includes('://')) return null
+      value = `https://${value}`
+    }
   }
 
   let url: URL

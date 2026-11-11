@@ -22,7 +22,7 @@ import { placeRibbonPane } from './windowPlacement'
 import { displayNearestWindowCenter } from './windowAnchoring'
 import { isSliding, settleSlide, slideTo } from './slide'
 import { TRAY_ICON_PNGS } from './trayIconData'
-import { LAUNCH_PROTOCOL, urlFromArgv } from './urlLaunch'
+import { LAUNCH_PROTOCOLS, urlFromArgv } from './urlLaunch'
 import { loadShellPlacementState, saveShellPlacementState } from './shellState'
 import {
   APPBAR_CALLBACK_MESSAGE,
@@ -41,8 +41,12 @@ import {
  * that job — it is false for `npm start` as well, so that path went looking for
  * a dev server nobody had started and came up with blank windows.
  */
-const DEV_SERVER_URL = process.env.SIDEBAR_DEV_SERVER_URL?.replace(/\/+$/, '') || null
+const DEV_SERVER_URL = (process.env.TABBAR_DEV_SERVER_URL || process.env.SIDEBAR_DEV_SERVER_URL)?.replace(/\/+$/, '') || null
 const IS_DEV = DEV_SERVER_URL !== null
+
+// Keep the original profile and single-instance identity through the rebrand.
+app.setName('Tabbar')
+app.setPath('userData', path.join(app.getPath('appData'), 'sidebar'))
 
 // Only one sidebar may run: a second copy would fight over the screen edge,
 // the tray, and the shared state files. Later launches hand their URL over.
@@ -320,6 +324,8 @@ function hidePlayerNow() {
   cancelPlayerHide()
   if (playerWindow && !playerWindow.isDestroyed()) playerWindow.hide()
   playerAnchorBounds = null
+  playerTargetTabId = null
+  if (playerWindow && !playerWindow.isDestroyed()) playerWindow.webContents.send('player:target', null)
 }
 
 function hidePlayerSoon() {
@@ -395,14 +401,15 @@ function openLaunchUrl(url: string) {
  * but doing it at runtime also covers the portable build and `npm run dev:full`.
  */
 function registerProtocolClient() {
-  if (app.isDefaultProtocolClient(LAUNCH_PROTOCOL)) return
-  if (app.isPackaged) {
-    app.setAsDefaultProtocolClient(LAUNCH_PROTOCOL)
-    return
+  for (const protocol of LAUNCH_PROTOCOLS) {
+    if (app.isDefaultProtocolClient(protocol)) continue
+    if (app.isPackaged) {
+      app.setAsDefaultProtocolClient(protocol)
+    } else {
+      // Development launches also need the project path after electron.exe.
+      app.setAsDefaultProtocolClient(protocol, process.execPath, [path.resolve(process.argv[1] ?? '.')])
+    }
   }
-  // In development the runtime is electron.exe, so the project path must ride
-  // along or a sidebar:// launch would just start a bare Electron.
-  app.setAsDefaultProtocolClient(LAUNCH_PROTOCOL, process.execPath, [path.resolve(process.argv[1] ?? '.')])
 }
 
 function refreshTrayMenu() {
@@ -442,7 +449,7 @@ function createTrayImage() {
 function ensureTray() {
   if (tray) return
   tray = new Tray(createTrayImage())
-  tray.setToolTip('Sidebar')
+  tray.setToolTip('Tabbar')
   refreshTrayMenu()
   tray.on('click', () => toggleShellVisibility())
 }
@@ -452,7 +459,7 @@ function buildShellMenu(options: { includeShow?: boolean } = {}) {
     ...(options.includeShow
       ? ([
           {
-            label: 'Show sidebar',
+            label: 'Show Tabbar',
             click: () => {
               if (!isFullscreenActive()) showShell()
             },

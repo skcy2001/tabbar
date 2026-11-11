@@ -1,0 +1,50 @@
+name: Build Tabbar Windows (Tauri)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x64
+          - target: aarch64-pc-windows-msvc
+            arch: arm64
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: tauri
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tauri/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri/src-tauri
+          key: ${{ matrix.target }}
+      - run: npm ci
+      - name: Test the shell with mocked native IPC
+        run: npm run test:ui
+      - name: Test Rust logic on the runner architecture
+        run: cargo test --locked --manifest-path core/Cargo.toml
+      - name: Build unsigned installer
+        run: npm run bundle -- --target ${{ matrix.target }} --bundles nsis -- --locked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tabbar-windows-${{ matrix.arch }}
+          path: |
+            tauri/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+            tauri/src-tauri/target/${{ matrix.target }}/release/tabbar.exe
+          if-no-files-found: error

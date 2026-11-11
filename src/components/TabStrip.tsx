@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import type { PinnedSiteInfo, TabInfo } from '../../shared/types'
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
   onActivate: (id: number) => void
   onNew: () => void
   onActivatePinnedSite: (id: string) => void
-  onPinnedSiteContextMenu: (id: string) => void
+  onPinnedSiteContextMenu: (id: string, clientX: number, clientY: number) => void
 }
 
 const DRAG_COMMIT_MIN_SQ = 16
@@ -117,7 +117,7 @@ function RibbonPlacementHandle() {
       type="button"
       className="ribbon-drag-handle"
       title="Drag, then release — dock to nearest screen edge"
-      aria-label="Move sidebar to screen edge"
+      aria-label="Move Tabbar to screen edge"
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
@@ -146,10 +146,16 @@ export function TabStrip({
   // Set while a drag has crossed the divider, turning the drop into a pin/unpin.
   const [crossHint, setCrossHint] = useState<'pin' | 'unpin' | null>(null)
   const pendingCross = useRef<'pin' | 'unpin' | null>(null)
+  const playerHoverTimer = useRef<number | null>(null)
+  const cancelPlayerHover = () => {
+    if (playerHoverTimer.current != null) window.clearTimeout(playerHoverTimer.current)
+    playerHoverTimer.current = null
+  }
+  useEffect(() => cancelPlayerHover, [])
 
   const handleContextMenu = (e: React.MouseEvent, tabId: number) => {
     e.preventDefault()
-    window.sidebarApi?.tabs.showContextMenu(tabId)
+    window.sidebarApi?.tabs.showContextMenu(tabId, e.clientX, e.clientY)
   }
 
   const handleEmptyStripContextMenu = (e: React.MouseEvent) => {
@@ -179,7 +185,7 @@ export function TabStrip({
   const unpinnedTabs = tabs.filter(tab => !tab.pinnedSiteId)
   const showPinnedDivider = pinnedSites.length > 0 && unpinnedTabs.length > 0
 
-  const tabHasPlayerMedia = (tab: TabInfo) => tab.isAudioPlaying === true || tab.hasMedia === true
+  const tabHasPlayerMedia = (tab: TabInfo) => tab.hasMedia === true
   const shouldShowPlayer = (tab: TabInfo) => tabHasPlayerMedia(tab) && (collapsed || !tab.isActive)
 
   const showPlayerWindow = (tabId: number, anchorEl: HTMLElement) => {
@@ -193,8 +199,12 @@ export function TabStrip({
   }
 
   const handleAudioHover = (tab: TabInfo | undefined, anchorEl: HTMLElement) => {
-    if (!tab) return
-    if (shouldShowPlayer(tab)) showPlayerWindow(tab.id, anchorEl)
+    cancelPlayerHover()
+    if (!tab || !shouldShowPlayer(tab)) return
+    playerHoverTimer.current = window.setTimeout(() => {
+      playerHoverTimer.current = null
+      if (anchorEl.isConnected) showPlayerWindow(tab.id, anchorEl)
+    }, 100)
   }
 
   const onStripPointerDownCapture = (e: React.PointerEvent) => {
@@ -392,14 +402,14 @@ export function TabStrip({
                   key={`pinned-${site.id}`}
                   className={`pinned-site-btn ${site.id === activePinnedSiteId ? 'active' : ''}`}
                   data-site-id={site.id}
-                  title={site.title}
+                  title={audio && (collapsed || site.id !== activePinnedSiteId) ? undefined : site.title}
                   onClick={() => {
                     if (recentReorder.current) return
                     onActivatePinnedSite(site.id)
                   }}
                   onContextMenu={e => {
                     e.preventDefault()
-                    onPinnedSiteContextMenu(site.id)
+                    onPinnedSiteContextMenu(site.id, e.clientX, e.clientY)
                   }}
                   onMouseEnter={e => {
                     if (openTabId == null) return
@@ -407,6 +417,7 @@ export function TabStrip({
                     handleAudioHover(tab, e.currentTarget as HTMLElement)
                   }}
                   onMouseLeave={() => {
+                    cancelPlayerHover()
                     window.sidebarApi?.shell.hidePlayer()
                   }}
                   aria-label={site.title}
@@ -455,6 +466,7 @@ export function TabStrip({
             <div
               key={`tab-${tab.id}`}
               role="tab"
+              aria-label={tab.title}
               aria-selected={tab.isActive}
               data-tab-id={tab.id}
               className={`tab-item ${tab.isActive ? 'active' : ''}`}
@@ -467,9 +479,10 @@ export function TabStrip({
                 handleAudioHover(tab, e.currentTarget as HTMLElement)
               }}
               onMouseLeave={() => {
+                cancelPlayerHover()
                 window.sidebarApi?.shell.hidePlayer()
               }}
-              title={tab.title}
+              title={shouldShowPlayer(tab) ? undefined : tab.title}
             >
               <span className={`tab-icon ${audio ? 'audio' : ''}`}>
                 <FaviconImg url={tab.faviconDataUrl} title={tab.title} />

@@ -436,7 +436,7 @@ export function registerIpc(
       setContextMenuOpen(true)
       Menu.buildFromTemplate([
         {
-          label: 'Pin to sidebar',
+          label: 'Pin to Tabbar',
           click: () => shell!.tabs.pinTab(tabId),
         },
         { type: 'separator' },

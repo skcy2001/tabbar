@@ -57,6 +57,10 @@ export interface DownloadInfo {
 }
 
 export interface MediaPlayerInfo {
+  hasMedia?: boolean
+  canPlayPause?: boolean
+  canNextTrack?: boolean
+  canMute?: boolean
   tabId: number
   title: string
   artist: string

@@ -1,6 +1,10 @@
-# Sidebar — Status
+# Tabbar — Status
 
-## Current State: Working Build
+The Windows Tauri 2 edition is implemented in `tauri/`. See
+[its README](tauri/README.md) for current features and validation. The notes below
+describe the earlier Electron implementation and its original roadmap.
+
+## Electron history: Working Build
 
 Both TypeScript configs compile clean. Vite renderer build succeeds. Electron main process compiled to `dist-electron/`.
 

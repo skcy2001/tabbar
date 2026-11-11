@@ -1,7 +1,7 @@
 {
-  "name": "sidebar",
+  "name": "tabbar",
   "version": "0.2.0",
-  "description": "Edge-style sidebar browser",
+  "description": "Tabbar docked browser — Electron edition",
   "main": "dist-electron/electron/main.js",
   "scripts": {
     "postinstall": "node scripts/ensure-rollup-win-native.mjs",
@@ -43,7 +43,7 @@
   },
   "build": {
     "appId": "com.samya.sidebar",
-    "productName": "Sidebar",
+    "productName": "Tabbar",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -69,11 +69,11 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Sidebar",
-      "artifactName": "Sidebar-Setup-${version}-${arch}.exe"
+      "shortcutName": "Tabbar",
+      "artifactName": "Tabbar-Setup-${version}-${arch}.exe"
     },
     "portable": {
-      "artifactName": "Sidebar-${version}-portable-${arch}.exe"
+      "artifactName": "Tabbar-${version}-portable-${arch}.exe"
     },
     "mac": {
       "icon": "build/icon.png",
@@ -101,8 +101,9 @@
     ],
     "protocols": [
       {
-        "name": "Sidebar",
+        "name": "Tabbar",
         "schemes": [
+          "tabbar",
           "sidebar"
         ]
       }

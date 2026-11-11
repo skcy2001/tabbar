@@ -178,6 +178,11 @@ export function Toolbar({
           {/* Outside .toolbar-controls: that container is hidden until hover, and
               these need to stay visible. */}
           <div className="toolbar-corner">
+            {window.sidebarApi?.tabs.toggleFullscreen && (
+              <button className="toolbar-btn" onClick={() => window.sidebarApi.tabs.toggleFullscreen?.()} title="Toggle fullscreen" aria-label="Toggle fullscreen">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2H2v4m8-4h4v4M2 10v4h4m8-4v4h-4" /></svg>
+              </button>
+            )}
             {downloads.length > 0 && (
               <button
                 className={`toolbar-btn downloads-btn ${activeDownloads.length > 0 ? 'active' : ''}`}

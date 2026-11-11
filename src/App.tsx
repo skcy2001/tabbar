@@ -8,8 +8,8 @@ import {
   INNER_RESIZE_HANDLE_WIDTH,
   RIBBON_WIDTH,
   type DownloadInfo,
-  type MediaPlayerInfo,
 } from '../shared/types'
+import { PlayerPreview } from './components/PlayerPreview'
 import './App.css'
 
 export type ShellRole = 'ribbon' | 'pane' | 'player' | 'edge' | 'downloads'
@@ -98,7 +98,7 @@ function RibbonShell() {
         onActivate={handleTabClick}
         onNew={handleNewTab}
         onActivatePinnedSite={handlePinnedSiteClick}
-        onPinnedSiteContextMenu={id => window.sidebarApi?.tabs.showPinnedContextMenu(id)}
+        onPinnedSiteContextMenu={(id, x, y) => window.sidebarApi?.tabs.showPinnedContextMenu(id, x, y)}
       />
     </div>
   )
@@ -172,175 +172,6 @@ function PaneShell() {
       </div>
 
       <PaneResizeHandle side={side} collapsed={collapsed} />
-    </div>
-  )
-}
-
-function PlayerShell() {
-  const [tabId, setTabId] = useState<number | null>(null)
-  const [info, setInfo] = useState<MediaPlayerInfo | null>(null)
-  const [titleOverflow, setTitleOverflow] = useState(false)
-  const shellRef = useRef<HTMLDivElement>(null)
-  const titleFrameRef = useRef<HTMLDivElement>(null)
-  const titleTextRef = useRef<HTMLSpanElement>(null)
-  const lastPlayerHeightRef = useRef(0)
-
-  useEffect(() => {
-    let alive = true
-    window.sidebarApi?.shell.getPlayerTarget().then(id => {
-      if (!alive) return
-      setTabId(typeof id === 'number' ? id : null)
-    })
-    const unsub = window.sidebarApi?.shell.onPlayerTargetChange(id => {
-      setTabId(typeof id === 'number' ? id : null)
-    })
-    return () => {
-      alive = false
-      unsub?.()
-    }
-  }, [])
-
-  useEffect(() => {
-    if (tabId == null) {
-      setInfo(null)
-      return
-    }
-
-    let cancelled = false
-    const tick = async () => {
-      const next = await window.sidebarApi?.tabs.getAudioInfo(tabId)
-      if (!cancelled) setInfo(next ?? null)
-    }
-    tick()
-    const timer = window.setInterval(tick, 1000)
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [tabId])
-
-  const refreshSoon = () => {
-    if (tabId == null) return
-    window.setTimeout(async () => {
-      const next = await window.sidebarApi?.tabs.getAudioInfo(tabId)
-      setInfo(next ?? null)
-    }, 150)
-  }
-
-  const artworkUrl = info?.artworkUrl ?? info?.faviconDataUrl ?? null
-  const title = info?.title || 'Playing audio'
-
-  const reportPlayerHeight = useCallback(() => {
-    const shell = shellRef.current
-    if (!shell) return
-    const height = Math.ceil(shell.getBoundingClientRect().height)
-    if (!Number.isFinite(height) || height <= 0) return
-    if (Math.abs(height - lastPlayerHeightRef.current) < 2) return
-    lastPlayerHeightRef.current = height
-    window.sidebarApi?.shell.resizePlayer(height)
-  }, [])
-
-  useEffect(() => {
-    const shell = shellRef.current
-    if (!shell) return
-
-    let frame = 0
-    const scheduleMeasure = () => {
-      if (frame) window.cancelAnimationFrame(frame)
-      frame = window.requestAnimationFrame(() => {
-        frame = 0
-        reportPlayerHeight()
-      })
-    }
-
-    const observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(shell)
-    scheduleMeasure()
-    window.addEventListener('resize', scheduleMeasure)
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame)
-      window.removeEventListener('resize', scheduleMeasure)
-      observer.disconnect()
-    }
-  }, [reportPlayerHeight])
-
-  useEffect(() => {
-    const measure = () => {
-      const frame = titleFrameRef.current
-      const text = titleTextRef.current
-      setTitleOverflow(Boolean(frame && text && text.scrollWidth > frame.clientWidth + 1))
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [title])
-
-  return (
-    <div
-      ref={shellRef}
-      className="player-shell"
-      onMouseEnter={() => window.sidebarApi?.shell.keepPlayerOpen()}
-      onMouseLeave={() => window.sidebarApi?.shell.hidePlayer()}
-      onClick={() => window.sidebarApi?.shell.openPlayerTarget()}
-    >
-      <div
-        ref={titleFrameRef}
-        className={`player-title-frame ${titleOverflow ? 'scrolling' : ''}`}
-        title={title}
-      >
-        <span ref={titleTextRef} className="player-title-text">{title}</span>
-        {titleOverflow && <span className="player-title-text clone" aria-hidden="true">{title}</span>}
-      </div>
-
-      {artworkUrl ? (
-        <img className="player-artwork" src={artworkUrl} alt="" onLoad={reportPlayerHeight} onError={reportPlayerHeight} />
-      ) : (
-        <div className="player-artwork fallback" aria-hidden="true">
-          {(title[0] ?? '?').toUpperCase()}
-        </div>
-      )}
-
-      <div className="player-controls" aria-label="Media controls">
-        <button
-          className="player-btn"
-          type="button"
-          onClick={e => {
-            e.stopPropagation()
-            if (tabId == null) return
-            window.sidebarApi?.tabs.togglePlayPause(tabId).then(refreshSoon)
-          }}
-          aria-label={info?.isPlaying ? 'Pause' : 'Play'}
-          title={info?.isPlaying ? 'Pause' : 'Play'}
-        >
-          {info?.isPlaying ? <PauseIcon /> : <PlayIcon />}
-        </button>
-        <button
-          className="player-btn"
-          type="button"
-          onClick={e => {
-            e.stopPropagation()
-            if (tabId == null) return
-            window.sidebarApi?.tabs.nextTrack(tabId).then(refreshSoon)
-          }}
-          aria-label="Next"
-          title="Next"
-        >
-          <NextIcon />
-        </button>
-        <button
-          className="player-btn"
-          type="button"
-          onClick={e => {
-            e.stopPropagation()
-            if (tabId == null) return
-            window.sidebarApi?.tabs.toggleMute(tabId).then(refreshSoon)
-          }}
-          aria-label={info?.isMuted ? 'Unmute' : 'Mute'}
-          title={info?.isMuted ? 'Unmute' : 'Mute'}
-        >
-          {info?.isMuted ? <MutedIcon /> : <VolumeIcon />}
-        </button>
-      </div>
     </div>
   )
 }
@@ -460,49 +291,9 @@ function EdgeShell() {
   return <div className="edge-peek-shell" aria-hidden="true" />
 }
 
-function PlayIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M5 3.4v9.2c0 .5.6.8 1 .5l6.7-4.6a.6.6 0 0 0 0-1L6 2.9c-.4-.3-1 0-1 .5Z" />
-    </svg>
-  )
-}
-
-function PauseIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M4 3.5c0-.4.3-.7.7-.7h1.4c.4 0 .7.3.7.7v9c0 .4-.3.7-.7.7H4.7a.7.7 0 0 1-.7-.7v-9Zm5.2 0c0-.4.3-.7.7-.7h1.4c.4 0 .7.3.7.7v9c0 .4-.3.7-.7.7H9.9a.7.7 0 0 1-.7-.7v-9Z" />
-    </svg>
-  )
-}
-
-function NextIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M3.5 3.7v8.6c0 .5.6.8 1 .5L10.6 8 4.5 3.2c-.4-.3-1 0-1 .5Zm8-.1c.4 0 .7.3.7.7v7.4a.7.7 0 0 1-1.4 0V4.3c0-.4.3-.7.7-.7Z" />
-    </svg>
-  )
-}
-
-function VolumeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M8.8 2.9a.7.7 0 0 1 1.1.6v9a.7.7 0 0 1-1.1.6L6.1 11H3.8c-.7 0-1.3-.6-1.3-1.3V6.3C2.5 5.6 3.1 5 3.8 5h2.3l2.7-2.1Zm3.4 2.1a.7.7 0 0 1 1 .2c.5.8.8 1.7.8 2.8s-.3 2-.8 2.8a.7.7 0 0 1-1.2-.8c.4-.6.6-1.2.6-2s-.2-1.4-.6-2a.7.7 0 0 1 .2-1Z" />
-    </svg>
-  )
-}
-
-function MutedIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M8.8 2.9a.7.7 0 0 1 1.1.6v9a.7.7 0 0 1-1.1.6L6.1 11H3.8c-.7 0-1.3-.6-1.3-1.3V6.3C2.5 5.6 3.1 5 3.8 5h2.3l2.7-2.1Zm4.9 3.4a.7.7 0 0 1 0 1L13 8l.7.7a.7.7 0 0 1-1 1l-.7-.7-.7.7a.7.7 0 0 1-1-1L11 8l-.7-.7a.7.7 0 0 1 1-1l.7.7.7-.7a.7.7 0 0 1 1 0Z" />
-    </svg>
-  )
-}
-
 export default function App({ role }: ShellProps) {
   if (role === 'ribbon') return <RibbonShell />
-  if (role === 'player') return <PlayerShell />
+  if (role === 'player') return <PlayerPreview />
   if (role === 'edge') return <EdgeShell />
   if (role === 'downloads') return <DownloadsShell />
   return <PaneShell />
